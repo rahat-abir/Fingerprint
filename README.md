@@ -17,6 +17,7 @@ Download docker desktop. [Download Docker Desktop](https://www.docker.com/produc
 
 https://www.zkteco.com/en/SDK  
 or click [Download ZKT_SDK](https://www.zkteco.com/en/SDK)
+<img width="1918" height="967" alt="image" src="https://github.com/user-attachments/assets/d3f2dd46-b8f9-41fc-9820-14bcbc813de0" />
 
 - Download the Windows ZTK SDK, and install it.  
 - unzip the downloaded file, run setup.exe
