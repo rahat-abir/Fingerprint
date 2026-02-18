@@ -33,8 +33,8 @@ It will look like this,
 
 ⚠️ Important: Keep this terminal open.
 The bridge service must remain running for fingerprint capture to work.
-
-4️⃣ Start Docker Containers
+## 4️⃣ Open docker desktop app.
+## 4️⃣.1️⃣ Start Docker Containers
 
 Open another terminal inside the web folder.
 
@@ -50,7 +50,7 @@ It will look like this
 <img width="1919" height="854" alt="image" src="https://github.com/user-attachments/assets/ac4ece43-3647-4989-928f-640ef127125c" />
 
 
-5️⃣ Open the Application
+## 5️⃣ Open the Application
 
 Once everything is running, open your browser and go to:
 ```
