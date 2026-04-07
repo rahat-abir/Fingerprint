@@ -1,177 +1,129 @@
-# Employee CSV Import
+# How To Import A New CSV File
 
-This folder contains the employee CSV import utility:
+This guide explains the easiest and safest way to add a new employee CSV file into the database.
 
-- [import_employees_csv.php](/mnt/c/fingerprint/attendancedeviceintegration/web/scripts/import_employees_csv.php)
+Use this guide whenever you get a new CSV file and want to add its data.
 
-The script is designed to safely import employee CSV files into the configured MySQL database using the same `FP_DB_*` environment variables as the app.
+## Before You Start
 
-You do not need PHP installed on your host machine if you run the script inside the `jambura_app` Docker container.
+Please make sure:
 
-<p style="color: red; font-weight: 700;">Danger: treat every import as production-impacting. A wrong command can overwrite live employee data.</p>
-
-<p style="color: red; font-weight: 700;">Team rule from now on: append only. Do not use <code>--replace-existing</code> unless you intentionally decide to do a full replacement and have a fresh backup.</p>
-
-## What The Script Does
-
-- Validates the CSV header and row structure
-- Requires these columns:
+1. Your CSV file is inside the `imports` folder.
+2. Docker Desktop is running.
+3. The `jambura_app` container is running.
+4. Your CSV file has these column names:
 
 ```csv
 employee_id,name,join_date,department,section,designation,nid,unit
 ```
 
-- Converts `join_date` from `M/D/YYYY` to MySQL `YYYY-MM-DD`
-- Allows blank `nid` values and imports them as `NULL`
-- Rejects duplicate `employee_id` values in the CSV
-- Rejects duplicate nonblank `nid` values in the CSV
-- Verifies the target database host and database name before execution
-- Can either:
-  - dry-run and validate only
-  - append rows
-  - replace existing employee-related data and then import
+## Important Rule
 
-## Safe Run Order
+For normal use, we will only **append** new data.
 
-Always do a dry run first.
+That means:
 
-## Dry Run
+- we add new rows
+- we do **not** delete old data
+- we do **not** replace everything
 
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed
+## Step 1: Put The CSV File In The Right Place
+
+Example:
+
+```text
+imports/NEW_FILE.csv
 ```
 
-This will:
+## Step 2: Check The File First
 
-- read and validate the CSV
-- connect to the target DB
-- print the connected host, port, DB, and user
-- show the import plan
-- stop without inserting anything
+Run this command first.
 
-Important:
+Replace `NEW_FILE.csv` with your real file name.
 
-- `--expect-host` must match the script output line `host: ...`
-- for this environment, the working value was `mysql-1cdb2fa3-3`
-- this may be different from the public Aiven DNS hostname
-
-## Recommended Ongoing Workflow
-
-From now on, use the script in append mode only.
-
-1. Dry run the CSV.
-2. Confirm the printed `host` and `db` are correct.
-3. Run the append import with `--execute`.
-4. Never add `--replace-existing` unless you intentionally want a full replacement.
-
-## Append Import
-
-This is the default and recommended mode going forward.
-
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ANOTHER_FILE.csv \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed \
-  --execute
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/NEW_FILE.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed
 ```
 
-In append mode:
+This step does **not** import anything yet.
 
-- existing rows are not deleted
-- the script stops if `employee_id` conflicts with an existing employee row
-- the script stops if nonblank `nid` conflicts with an existing employee row
-- this is the safest mode and should be your normal workflow
+It only checks:
 
-## Replace Existing Employee Data And Import
+- the file format
+- the column names
+- the target database
+- possible duplicate problems
 
-Use this when you want to wipe employee-related data and replace it with the CSV contents.
+## Step 3: Read The Output Carefully
 
-<p style="color: red; font-weight: 700;">Warning: this mode deletes current employee-related rows before importing. Do not use this for normal imports.</p>
+Make sure the script shows:
 
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed \
-  --replace-existing \
-  --execute
+- the correct database host
+- the correct database name
+- no error message
+
+If there is an error, stop and fix the CSV first.
+
+## Step 4: Import The CSV
+
+If the check was successful, run this command:
+
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/NEW_FILE.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed --execute
 ```
 
-This will delete rows from:
+This is the normal command you should use in the future.
 
-- `employee_extra_ids`
-- `employee_fingers`
-- `scan_logs`
-- `employees`
+It will:
 
-It does **not** delete:
+- add the new rows
+- keep the old data
+- stop if the new file conflicts with existing data
 
-- tables
-- columns
-- indexes
-- foreign keys
-- `users`
-- `migrations`
+## Example Using Your Current File
 
-## Use A Different Delimiter
+Check first:
 
-If a future file uses semicolons instead of commas:
-
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ANOTHER_FILE.csv \
-  --delimiter=';' \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed
 ```
 
-## CSV Rules For Future Files
+Then import:
 
-Future CSV files should:
-
-- use this exact header:
-
-```csv
-employee_id,name,join_date,department,section,designation,nid,unit
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed --execute
 ```
 
-- keep `join_date` in `M/D/YYYY` format
-- avoid duplicate `employee_id`
-- avoid duplicate nonblank `nid`
-- keep blank `nid` empty, not `0`
+## If You Get Another CSV File Later
 
-## Important Notes
+Use the same 2-step process:
 
-- the `jambura_app` container must be running
-- the script runs with the same `FP_DB_*` environment variables as the app container
-- check your `.env` carefully before running, because it may point to Aiven
-- the safest ongoing mode is append mode without `--replace-existing`
-- `--execute` is required for real inserts
-- `--expect-host` and `--expect-db` are required when using `--execute`
-- without `--replace-existing`, the script performs conflict checks against existing DB rows
-- with `--replace-existing`, the script deletes employee-related rows first, then imports the CSV in the same transaction
+1. check the file
+2. import the file
 
-## Example With Your Current File
+Just change the file name in the command.
 
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed
+Example:
+
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ANOTHER_FILE.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed
 ```
 
-Then:
-
-```bash
-docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php \
-  --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ICML_1.csv \
-  --expect-host=mysql-1cdb2fa3-3 \
-  --expect-db=ahmed \
-  --execute
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/ANOTHER_FILE.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed --execute
 ```
 
-That second command is now the preferred pattern for future imports because it appends and does not delete existing employee data.
+## Simple Reminder
+
+Always follow this order:
+
+1. Put the CSV into `imports`
+2. Run the check command
+3. Confirm there are no errors
+4. Run the import command
+
+<p style="color: red; font-size: 22px; font-weight: 800;">Danger Zone: The command below wipes current employee-related data and then imports a new file. Do not use this unless you truly want to remove the old data first.</p>
+
+```powershell
+docker exec -it jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/scripts/import_employees_csv.php --file=/var/www/html/jambura/attendancedeviceintegration/web/imports/NEW_FILE.csv --expect-host=mysql-1cdb2fa3-3 --expect-db=ahmed --replace-existing --execute
+```
