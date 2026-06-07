@@ -103,3 +103,18 @@ pass: MyStrongPass123
 ---
 
 Login and use the system.
+
+
+### Troubleshooting (New Setup)
+**1. If the database connection fails or shows falling back to local database:**
+Ensure your environment file is named `.env` (with a dot prefix) and not `env`. In Git Bash, rename it using:
+```bash
+mv env .env
+```
+
+(Remember to run docker compose down && docker compose up -d after renaming to load the file).
+
+**2. If app-run.sh run migration fails with Git Bash path or TTY errors: Run the migrations directly using this command to bypass Windows shell formatting:**
+```bash
+MSYS_NO_PATHCONV=1 docker exec -i jambura_app php /var/www/html/jambura/attendancedeviceintegration/web/vendor/bin/phinx migrate|
+```
